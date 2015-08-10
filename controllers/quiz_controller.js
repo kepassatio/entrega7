@@ -11,15 +11,32 @@ exports.load = function(req, res, next, quizId) {
     }
   ).catch(function(error){next(error)});
 };
+// Autoload :search
+exports.loadSearch = function(req, res, next, searchId) {
+  models.Quiz.find(searchId).then(
+    function(quiz) {
+      if (quiz) {
+        req.quiz = quiz;
+        next();
+      } else{next(new Error('No existe quizId=' + quizId))}
+    }
+  ).catch(function(error){next(error)});
+};
+
 
 // GET /quizes
 exports.index = function(req, res) {
   models.Quiz.findAll().then(
-    function(quizes) {
-      res.render('quizes/index.ejs', {quizes: quizes, errors: []});
-    }
+    var search = req.query.search||"";
+    search = "%" + search.replace(" ","%") + "%";
+
+    models.Quiz.findAll({where: ["lower(pregunta) like lower(?)", search], order:'pregunta ASC'}).then(
+      function(quizes) {
+        res.render('quizes/index.ejs', {quizes: quizes, errors: []});
+      }
   ).catch(function(error){next(error)});
 };
+
 
 // GET /quizes/:id
 exports.show = function(req, res) {
@@ -39,6 +56,11 @@ exports.answer = function(req, res) {
       errors: []
     }
   );
+};
+
+// GET /author
+exports.author = function (req, res) {
+  res.render('author', { errors: []});
 };
 
 // GET /quizes/new
@@ -102,6 +124,13 @@ exports.destroy = function(req, res) {
   req.quiz.destroy().then( function() {
     res.redirect('/quizes');
   }).catch(function(error){next(error)});
+};
+
+// GET /quizes?search=:model
+exports.edit = function(req, res) {
+  var quiz = req.quiz;  // req.quiz: autoload de instancia de quiz
+
+  res.render('quizes/edit', {quiz: quiz, errors: []});
 };
 
 //  console.log("req.quiz.id: " + req.quiz.id);
